@@ -1,0 +1,47 @@
+- THIS FOLDER INCLUDES THE NECESSARY FILES TO RUN THE OSI TOOL CODE, INTEGRATED WITH POSTGRESQL AND GRAFANA.
+- PLEASE ENSURE THAT YOU HAVE THE PASSWORD TO POSTGRESQL
+===============================================================
+BEFORE MOVING FORWARD, PLEASE ENSURE THE FOLLOWINGS:
+	
+	- Python is installed in the PC
+	- use command prompt in administrative mode to install the following packages by running the following line
+	pip install numpy pandas scipy matplotlib psycopg2 openpyxl pyvis
+===============================================================
+
+- Once the files have been extracted:
+	
+	>> There's a file named "file_host", which is a vbs script. This is for hosting files over a local port, which is necessary to display the network diagram in the Grafana dashboard.
+	But it will require a simple modification.
+	1) Open the "file_host.vbs" using Notepad. Now you will notice a file address in the script. You HAVE to change this address to wherever you have extracted these files to.
+	For example, if you extracted to "D:\OSI_Tool", then this address should replace the existing address in the script.
+	2) Now create a shortcut of file_host.vbs. This can be done by right click drop down menu (click show more options if on Windows 11).
+	3) Once done, open Run using Win+R, and type shell:starup and press Enter, this will open up a folder. Cut and paste the file_host.vbs shortcut in this folder. Restart PC.
+	>> To check whether the file_host is working, try typing localhost:8010 in a browser to see if it displays the folder where it's hosting.
+
+	>> Now open the osi_code.py using Notepad or a python IDE like VSCode, Spyder etc. Once in the code, search using CTRL+F for conn_params. Find the lines that look like,
+	
+	conn_params = {
+        	'user': 'postgres',
+        	'password': 'password123',
+        	'host': 'localhost',
+        	'port': '5432',
+        	'database': 'Osi_Tool_DB'
+    		}
+
+	Here, please change the 'password123' to whatever password you set for PostgreSQL during installation.
+	Save using CTRL+S and close.
+
+	>> For PostgreSQL, launch and login into the app pgAdmin 4 once to check for any error. Open the app, click on "Servers" on the left pane and check if the menu is working.
+
+	>> With Postgres ready, launch or run the python code. The code will automatically create a new database named Osi_Tool_DB. To run the code without an IDE, you can open command prompt in the folder where the code is located and type: python osi_code.py.
+	>> Now come back to Postgres to check if the newly created database is there or not. If everything is in order, we can move on to Grafana.
+
+	>> Open a browser and type localhost:3000 in the address bar to launch Grafana in the browser. Log in using your credentials and open up Grafana.
+	>> Once in, navigate the left pane and find "Connections". Then go to "Data Sources". There, search for PostgreSQL.
+	>> Select PostgreSQL, and fill the page with required values. Make sure the database name is Osi_Tool_DB. Then press "Save & test". If it succeeds, now we can move on.
+
+	>> Now navigate to "Administration > Plugins and data > Plugins". Type "mahe" in the search bar and a plugin named Grafana Reporter will come up. Open the plugin and enable it. Restart PC.
+
+
+	>> Once restarted, open Grafana, and go to dashboards. Go to New > New Dashboard > Import dashboard > Upload dashboard JSON file > {select OSI_dashboard} from the folder where the code is located.
+	>> The dashboard is ready.

@@ -1,0 +1,453 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 960px;
+                 height: 600px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 960px;
+                 height: 600px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "font": {"color": "#ffffff"}, "id": "BHIWAPG", "label": "BHIWAPG", "shape": "square", "size": 30, "title": "BHIWAPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "BASSIPG", "label": "BASSIPG", "shape": "circle", "size": 30, "title": "BASSIPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "AGRAPG", "label": "AGRAPG", "shape": "square", "size": 30, "title": "AGRAPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "KTPTLPG", "label": "KTPTLPG", "shape": "square", "size": 30, "title": "KTPTLPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SIKARPG", "label": "SIKARPG", "shape": "square", "size": 30, "title": "SIKARPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JAPRSPG", "label": "JAPRSPG", "shape": "square", "size": 30, "title": "JAPRSPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "PHGI7RS", "label": "PHGI7RS", "shape": "square", "size": 30, "title": "PHGI7RS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BABAIRS", "label": "BABAIRS", "shape": "square", "size": 30, "title": "BABAIRS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "NMRNAPG", "label": "NMRNAPG", "shape": "circle", "size": 30, "title": "NMRNAPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SIKARRS", "label": "SIKARRS", "shape": "square", "size": 30, "title": "SIKARRS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MANSRPG", "label": "MANSRPG", "shape": "square", "size": 30, "title": "MANSRPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "KNSRIGE", "label": "KNSRIGE", "shape": "square", "size": 30, "title": "KNSRIGE"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "BHNMLPG", "label": "BHNMLPG", "shape": "circle", "size": 30, "title": "BHNMLPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JODH4RS", "label": "JODH4RS", "shape": "square", "size": 30, "title": "JODH4RS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "KNKRLPG", "label": "KNKRLPG", "shape": "circle", "size": 30, "title": "KNKRLPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "CHIT4RS", "label": "CHIT4RS", "shape": "square", "size": 30, "title": "CHIT4RS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "RAPPCNP", "label": "RAPPCNP", "shape": "square", "size": 30, "title": "RAPPCNP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MERTARS", "label": "MERTARS", "shape": "square", "size": 30, "title": "MERTARS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "KOTAPG", "label": "KOTAPG", "shape": "circle", "size": 30, "title": "KOTAPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BEAWRPG", "label": "BEAWRPG", "shape": "square", "size": 30, "title": "BEAWRPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JINDPG", "label": "JINDPG", "shape": "square", "size": 30, "title": "JINDPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "BHIWNPG", "label": "BHIWNPG", "shape": "circle", "size": 30, "title": "BHIWNPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BHIWNBB", "label": "BHIWNBB", "shape": "square", "size": 30, "title": "BHIWNBB"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "KBLPRHS", "label": "KBLPRHS", "shape": "square", "size": 30, "title": "KBLPRHS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "HISARPG", "label": "HISARPG", "shape": "square", "size": 30, "title": "HISARPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "CCGTBDV", "label": "CCGTBDV", "shape": "square", "size": 30, "title": "CCGTBDV"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MNDRGPG", "label": "MNDRGPG", "shape": "square", "size": 30, "title": "MNDRGPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JTIKRPG", "label": "JTIKRPG", "shape": "square", "size": 30, "title": "JTIKRPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MOGAPG", "label": "MOGAPG", "shape": "square", "size": 30, "title": "MOGAPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MEERTPG", "label": "MEERTPG", "shape": "square", "size": 30, "title": "MEERTPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SJLPRPG", "label": "SJLPRPG", "shape": "square", "size": 30, "title": "SJLPRPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "RGTPSHS", "label": "RGTPSHS", "shape": "square", "size": 30, "title": "RGTPSHS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "FTEBDPG", "label": "FTEBDPG", "shape": "circle", "size": 30, "title": "FTEBDPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "GURGNPG", "label": "GURGNPG", "shape": "square", "size": 30, "title": "GURGNPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "RATN4RS", "label": "RATN4RS", "shape": "square", "size": 30, "title": "RATN4RS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "FUTRERS", "label": "FUTRERS", "shape": "square", "size": 30, "title": "FUTRERS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "KAITHPG", "label": "KAITHPG", "shape": "square", "size": 30, "title": "KAITHPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BKNR4RS", "label": "BKNR4RS", "shape": "square", "size": 30, "title": "BKNR4RS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "DHNDAHS", "label": "DHNDAHS", "shape": "square", "size": 30, "title": "DHNDAHS"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "CHIT7PG", "label": "CHIT7PG", "shape": "square", "size": 30, "title": "CHIT7PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AJMERPG", "label": "AJMERPG", "shape": "circle", "size": 30, "title": "AJMERPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BHDLAPG", "label": "BHDLAPG", "shape": "square", "size": 30, "title": "BHDLAPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SURJAIP", "label": "SURJAIP", "shape": "circle", "size": 30, "title": "SURJAIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BKNRPG", "label": "BKNRPG", "shape": "square", "size": 30, "title": "BKNRPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "BIKNRIP", "label": "BIKNRIP", "shape": "circle", "size": 30, "title": "BIKNRIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BHDL2PG", "label": "BHDL2PG", "shape": "square", "size": 30, "title": "BHDL2PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "BKNR7PG", "label": "BKNR7PG", "shape": "circle", "size": 30, "title": "BKNR7PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RAWRAIP", "label": "RAWRAIP", "shape": "circle", "size": 30, "title": "RAWRAIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AREPRIP", "label": "AREPRIP", "shape": "circle", "size": 30, "title": "AREPRIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BHDLARS", "label": "BHDLARS", "shape": "square", "size": 30, "title": "BHDLARS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "TPRELIP", "label": "TPRELIP", "shape": "circle", "size": 30, "title": "TPRELIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "APTFLIP", "label": "APTFLIP", "shape": "circle", "size": 30, "title": "APTFLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ACMEIP", "label": "ACMEIP", "shape": "circle", "size": 30, "title": "ACMEIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "AZPSSIP", "label": "AZPSSIP", "shape": "square", "size": 30, "title": "AZPSSIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "MRPLIP", "label": "MRPLIP", "shape": "circle", "size": 30, "title": "MRPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AZR43IP", "label": "AZR43IP", "shape": "circle", "size": 30, "title": "AZR43IP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "KHTRIPG", "label": "KHTRIPG", "shape": "square", "size": 30, "title": "KHTRIPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "MANDUPG", "label": "MANDUPG", "shape": "square", "size": 30, "title": "MANDUPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AZR41IP", "label": "AZR41IP", "shape": "circle", "size": 30, "title": "AZR41IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AZRMPIP", "label": "AZRMPIP", "shape": "circle", "size": 30, "title": "AZRMPIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ESURLIP", "label": "ESURLIP", "shape": "circle", "size": 30, "title": "ESURLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "FTGR2PG", "label": "FTGR2PG", "shape": "square", "size": 30, "title": "FTGR2PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "EDENIP", "label": "EDENIP", "shape": "circle", "size": 30, "title": "EDENIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ADNHBIP", "label": "ADNHBIP", "shape": "circle", "size": 30, "title": "ADNHBIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "FTEGHIP", "label": "FTEGHIP", "shape": "square", "size": 30, "title": "FTEGHIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RNEWJIP", "label": "RNEWJIP", "shape": "circle", "size": 30, "title": "RNEWJIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SPCEPIP", "label": "SPCEPIP", "shape": "circle", "size": 30, "title": "SPCEPIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RJ3PLIP", "label": "RJ3PLIP", "shape": "circle", "size": 30, "title": "RJ3PLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AVADAIP", "label": "AVADAIP", "shape": "circle", "size": 30, "title": "AVADAIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AHEJ2IP", "label": "AHEJ2IP", "shape": "circle", "size": 30, "title": "AHEJ2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AHEJ3IP", "label": "AHEJ3IP", "shape": "circle", "size": 30, "title": "AHEJ3IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AYANAIP", "label": "AYANAIP", "shape": "circle", "size": 30, "title": "AYANAIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSBPLIP", "label": "RSBPLIP", "shape": "circle", "size": 30, "title": "RSBPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AFSPSIP", "label": "AFSPSIP", "shape": "circle", "size": 30, "title": "AFSPSIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSUPLIP", "label": "RSUPLIP", "shape": "circle", "size": 30, "title": "RSUPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASPS1IP", "label": "ASPS1IP", "shape": "circle", "size": 30, "title": "ASPS1IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASPS2IP", "label": "ASPS2IP", "shape": "circle", "size": 30, "title": "ASPS2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AWPS1IP", "label": "AWPS1IP", "shape": "circle", "size": 30, "title": "AWPS1IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AWPS2IP", "label": "AWPS2IP", "shape": "circle", "size": 30, "title": "AWPS2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "TS1PLIP", "label": "TS1PLIP", "shape": "circle", "size": 30, "title": "TS1PLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSRPLIP", "label": "RSRPLIP", "shape": "circle", "size": 30, "title": "RSRPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SPRJNT", "label": "SPRJNT", "shape": "circle", "size": 30, "title": "SPRJNT"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "DWARKPG", "label": "DWARKPG", "shape": "circle", "size": 30, "title": "DWARKPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BAMNLDV", "label": "BAMNLDV", "shape": "square", "size": 30, "title": "BAMNLDV"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "CSPJPIP", "label": "CSPJPIP", "shape": "circle", "size": 30, "title": "CSPJPIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AHPPLIP", "label": "AHPPLIP", "shape": "circle", "size": 30, "title": "AHPPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ABCRLIP", "label": "ABCRLIP", "shape": "circle", "size": 30, "title": "ABCRLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SKBSLNT", "label": "SKBSLNT", "shape": "circle", "size": 30, "title": "SKBSLNT"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "MSUPLIP", "label": "MSUPLIP", "shape": "circle", "size": 30, "title": "MSUPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SKBS2NT", "label": "SKBS2NT", "shape": "circle", "size": 30, "title": "SKBS2NT"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SIKR2PG", "label": "SIKR2PG", "shape": "square", "size": 30, "title": "SIKR2PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "TPGELIP", "label": "TPGELIP", "shape": "circle", "size": 30, "title": "TPGELIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BKNR2PG", "label": "BKNR2PG", "shape": "square", "size": 30, "title": "BKNR2PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASEPLIP", "label": "ASEPLIP", "shape": "circle", "size": 30, "title": "ASEPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "NOKRANT", "label": "NOKRANT", "shape": "circle", "size": 30, "title": "NOKRANT"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASJ1SIP", "label": "ASJ1SIP", "shape": "circle", "size": 30, "title": "ASJ1SIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "RISHIUK", "label": "RISHIUK", "shape": "square", "size": 30, "title": "RISHIUK"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "KTSWRPG", "label": "KTSWRPG", "shape": "circle", "size": 30, "title": "KTSWRPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASJ1WIP", "label": "ASJ1WIP", "shape": "circle", "size": 30, "title": "ASJ1WIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "DVKOTIP", "label": "DVKOTIP", "shape": "circle", "size": 30, "title": "DVKOTIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "STCOMPG", "label": "STCOMPG", "shape": "square", "size": 30, "title": "STCOMPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "FTGR3PG", "label": "FTGR3PG", "shape": "circle", "size": 30, "title": "FTGR3PG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JASL4RS", "label": "JASL4RS", "shape": "square", "size": 30, "title": "JASL4RS"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSEPLIP", "label": "RSEPLIP", "shape": "circle", "size": 30, "title": "RSEPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "GEPLIP", "label": "GEPLIP", "shape": "circle", "size": 30, "title": "GEPLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ASHPLIP", "label": "ASHPLIP", "shape": "square", "size": 30, "title": "ASHPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AEGPLIP", "label": "AEGPLIP", "shape": "circle", "size": 30, "title": "AEGPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AXPPLIP", "label": "AXPPLIP", "shape": "circle", "size": 30, "title": "AXPPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSVPLIP", "label": "RSVPLIP", "shape": "circle", "size": 30, "title": "RSVPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ARPTLIP", "label": "ARPTLIP", "shape": "circle", "size": 30, "title": "ARPTLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSAPLIP", "label": "RSAPLIP", "shape": "circle", "size": 30, "title": "RSAPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "PGPLIP", "label": "PGPLIP", "shape": "circle", "size": 30, "title": "PGPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASER2IP", "label": "ASER2IP", "shape": "circle", "size": 30, "title": "ASER2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RERSHIP", "label": "RERSHIP", "shape": "circle", "size": 30, "title": "RERSHIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "TPSBIP", "label": "TPSBIP", "shape": "circle", "size": 30, "title": "TPSBIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ASEPHIP", "label": "ASEPHIP", "shape": "circle", "size": 30, "title": "ASEPHIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "NEMCHPG", "label": "NEMCHPG", "shape": "square", "size": 30, "title": "NEMCHPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "NRELAPG", "label": "NRELAPG", "shape": "square", "size": 30, "title": "NRELAPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SRI4PIP", "label": "SRI4PIP", "shape": "square", "size": 30, "title": "SRI4PIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ESSL1IP", "label": "ESSL1IP", "shape": "square", "size": 30, "title": "ESSL1IP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS3A", "label": "BUS3A", "shape": "square", "size": 30, "title": "BUS3A"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS3B", "label": "BUS3B", "shape": "square", "size": 30, "title": "BUS3B"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ASEJ2IP", "label": "ASEJ2IP", "shape": "square", "size": 30, "title": "ASEJ2IP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS4B", "label": "BUS4B", "shape": "square", "size": 30, "title": "BUS4B"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "AREHSIP", "label": "AREHSIP", "shape": "square", "size": 30, "title": "AREHSIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SRNTCAIP", "label": "SRNTCAIP", "shape": "square", "size": 30, "title": "SRNTCAIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ALIGRPG", "label": "ALIGRPG", "shape": "square", "size": 30, "title": "ALIGRPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AGE25IP", "label": "AGE25IP", "shape": "circle", "size": 30, "title": "AGE25IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "AGE24IP", "label": "AGE24IP", "shape": "circle", "size": 30, "title": "AGE24IP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "SOSJVNSJ", "label": "SOSJVNSJ", "shape": "square", "size": 30, "title": "SOSJVNSJ"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "AZUREPG", "label": "AZUREPG", "shape": "square", "size": 30, "title": "AZUREPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ADANIPG", "label": "ADANIPG", "shape": "square", "size": 30, "title": "ADANIPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JGCPLIP", "label": "JGCPLIP", "shape": "square", "size": 30, "title": "JGCPLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ACMEPG", "label": "ACMEPG", "shape": "square", "size": 30, "title": "ACMEPG"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "FTHGRIP", "label": "FTHGRIP", "shape": "square", "size": 30, "title": "FTHGRIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS2A", "label": "BUS2A", "shape": "square", "size": 30, "title": "BUS2A"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSDP2IP", "label": "RSDP2IP", "shape": "circle", "size": 30, "title": "RSDP2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "GSPLIP", "label": "GSPLIP", "shape": "circle", "size": 30, "title": "GSPLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BKNR2IP", "label": "BKNR2IP", "shape": "square", "size": 30, "title": "BKNR2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "SGELIP", "label": "SGELIP", "shape": "circle", "size": 30, "title": "SGELIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "KBNHPIP", "label": "KBNHPIP", "shape": "circle", "size": 30, "title": "KBNHPIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "FTGR3IP", "label": "FTGR3IP", "shape": "square", "size": 30, "title": "FTGR3IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSJPLIP", "label": "RSJPLIP", "shape": "circle", "size": 30, "title": "RSJPLIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "NRVPLI", "label": "NRVPLI", "shape": "circle", "size": 30, "title": "NRVPLI"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSDP3IP", "label": "RSDP3IP", "shape": "circle", "size": 30, "title": "RSDP3IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "XXPPLIP", "label": "XXPPLIP", "shape": "circle", "size": 30, "title": "XXPPLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BHDL2IP", "label": "BHDL2IP", "shape": "square", "size": 30, "title": "BHDL2IP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ERAPLIP", "label": "ERAPLIP", "shape": "circle", "size": 30, "title": "ERAPLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS1A", "label": "BUS1A", "shape": "square", "size": 30, "title": "BUS1A"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "BUS2B", "label": "BUS2B", "shape": "square", "size": 30, "title": "BUS2B"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ESLN1PG", "label": "ESLN1PG", "shape": "square", "size": 30, "title": "ESLN1PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ESELMIP", "label": "ESELMIP", "shape": "circle", "size": 30, "title": "ESELMIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "ESLN2PG", "label": "ESLN2PG", "shape": "square", "size": 30, "title": "ESLN2PG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "ESELNIP", "label": "ESELNIP", "shape": "circle", "size": 30, "title": "ESELNIP"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "RSDCLIP", "label": "RSDCLIP", "shape": "circle", "size": 30, "title": "RSDCLIP"}, {"color": "red", "font": {"color": "#ffffff"}, "id": "JAIPRPG", "label": "JAIPRPG", "shape": "square", "size": 30, "title": "JAIPRPG"}, {"color": "lightblue", "font": {"color": "#ffffff"}, "id": "DAUSAPG", "label": "DAUSAPG", "shape": "circle", "size": 30, "title": "DAUSAPG"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "BHIWAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "AGRAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "KTPTLPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "JAPRSPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "PHGI7RS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "JAPRSPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BASSIPG", "title": "Flowing Out of the Station", "to": "PHGI7RS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "BABAIRS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "SIKARRS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "MANSRPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "MANSRPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "BHIWAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "BHIWAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "JAPRSPG", "title": "Flowing Out of the Station", "to": "AGRAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "JAPRSPG", "title": "Flowing Out of the Station", "to": "AGRAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "JAPRSPG", "title": "Flowing Out of the Station", "to": "BASSIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "JAPRSPG", "title": "Flowing Out of the Station", "to": "BASSIPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "KNSRIGE", "to": "BHNMLPG", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "JODH4RS", "title": "Flowing Into the Station", "to": "KNKRLPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "CHIT4RS", "title": "Flowing Into the Station", "to": "KNKRLPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RAPPCNP", "title": "Flowing Into the Station", "to": "KNKRLPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHNMLPG", "title": "Flowing Into the Station", "to": "KNKRLPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KNSRIGE", "title": "Flowing Into the Station", "to": "KNKRLPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KOTAPG", "title": "Flowing Out of the Station", "to": "MERTARS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KOTAPG", "title": "Flowing Out of the Station", "to": "BEAWRPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KOTAPG", "title": "Flowing Out of the Station", "to": "JAPRSPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KOTAPG", "title": "Flowing Out of the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KOTAPG", "title": "Flowing Out of the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JINDPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JINDPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHIWNBB", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KBLPRHS", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "HISARPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "CCGTBDV", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MNDRGPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MNDRGPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MNDRGPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MNDRGPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "HISARPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "HISARPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JTIKRPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MOGAPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "MEERTPG", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "PHGI7RS", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "PHGI7RS", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "CHIT4RS", "title": "Flowing Into the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KNKRLPG", "title": "Flowing Into the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KOTAPG", "title": "Flowing Into the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "SJLPRPG", "title": "Flowing Into the Station", "to": "RAPPCNP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RGTPSHS", "title": "Flowing Into the Station", "to": "FTEBDPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "KNKRLPG", "to": "BHNMLPG", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "GURGNPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "BASSIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "AGRAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "KTPTLPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "HISARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "HISARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "HISARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BASSIPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BASSIPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "AGRAPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "AGRAPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RATN4RS", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RATN4RS", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KTPTLPG", "title": "Flowing Out of the Station", "to": "BASSIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KTPTLPG", "title": "Flowing Out of the Station", "to": "BHIWAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "KTPTLPG", "title": "Flowing Out of the Station", "to": "FUTRERS", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "KAITHPG", "to": "BHNMLPG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "KAITHPG", "to": "BHNMLPG", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "BKNR4RS", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR4RS", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "DHNDAHS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "DHNDAHS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AJMERPG", "title": "Flowing Out of the Station", "to": "CHIT7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AJMERPG", "title": "Flowing Out of the Station", "to": "CHIT7PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "SURJAIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "SURJAIP", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "BABAIRS", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BABAIRS", "title": "Flowing Into the Station", "to": "BHIWNPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BIKNRIP", "title": "Flowing Out of the Station", "to": "BKNRPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "MOGAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "MOGAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "BKNR4RS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "BKNR4RS", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDLAPG", "title": "Flowing Into the Station", "to": "RAWRAIP", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "AREPRIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "AREPRIP", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "BHDLARS", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDLARS", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDL2PG", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDL2PG", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "TPRELIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "APTFLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "ACMEIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "AZPSSIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDLAPG", "title": "Flowing Into the Station", "to": "MRPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AZR43IP", "title": "Flowing Out of the Station", "to": "BKNR7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "AJMERPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "AJMERPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "BKNR7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "BKNR7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KHTRIPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "KHTRIPG", "title": "Flowing Into the Station", "to": "SIKARPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AJMERPG", "title": "Flowing Out of the Station", "to": "MANDUPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AJMERPG", "title": "Flowing Out of the Station", "to": "PHGI7RS", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AZR41IP", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "AZRMPIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "ESURLIP", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "EDENIP", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "ADNHBIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "FTEGHIP", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "RNEWJIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR7PG", "to": "SPCEPIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "FTGR2PG", "title": "Flowing Into the Station", "to": "RJ3PLIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR7PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR7PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JTIKRPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JTIKRPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "SIKARPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "SIKARPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR7PG", "to": "AVADAIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "AHEJ2IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "AHEJ3IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR7PG", "to": "AYANAIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "AYANAIP", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "RSBPLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "AVADAIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AFSPSIP", "title": "Flowing Out of the Station", "to": "FTEGHIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AFSPSIP", "title": "Flowing Out of the Station", "to": "FTEGHIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "RSUPLIP", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "AFSPSIP", "title": "Flowing Into the Station", "to": "ASPS1IP", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "AFSPSIP", "to": "ASPS2IP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "AWPS1IP", "title": "Flowing Out of the Station", "to": "AFSPSIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AWPS2IP", "title": "Flowing Out of the Station", "to": "AFSPSIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "FTGR2PG", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "FTGR2PG", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR7PG", "to": "TS1PLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "RSRPLIP", "title": "Flowing Out of the Station", "to": "BIKNRIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "AFSPSIP", "title": "Flowing Into the Station", "to": "SPRJNT", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JTIKRPG", "title": "Flowing Into the Station", "to": "DWARKPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BAMNLDV", "title": "Flowing Into the Station", "to": "DWARKPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BIKNRIP", "title": "Flowing Out of the Station", "to": "RSRPLIP", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "CSPJPIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "AHPPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "ABCRLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "SKBSLNT", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "MSUPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "SKBSLNT", "to": "SKBS2NT", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "SIKR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "NMRNAPG", "title": "Flowing Out of the Station", "to": "SIKR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHIWAPG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR7PG", "title": "Flowing Into the Station", "to": "TPGELIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR2PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR2PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR2PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR2PG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHIWAPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHIWAPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "ASEPLIP", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "NOKRANT", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "ASJ1SIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "ASJ1SIP", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "RISHIUK", "title": "Flowing Into the Station", "to": "KTSWRPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RISHIUK", "title": "Flowing Into the Station", "to": "KTSWRPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "ASJ1SIP", "to": "ASJ1WIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "DVKOTIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "BKNR7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "BKNR7PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "STCOMPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "STCOMPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "STCOMPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "FTGR2PG", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "FTGR2PG", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JASL4RS", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "JASL4RS", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "RSEPLIP", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BKNR2PG", "title": "Flowing Into the Station", "to": "GEPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTEGHIP", "title": "Flowing Out of the Station", "to": "ASHPLIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BHDL2PG", "title": "Flowing Into the Station", "to": "AEGPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "AXPPLIP", "title": "Flowing Out of the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR3PG", "to": "RSVPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR7PG", "to": "ARPTLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR3PG", "to": "RSAPLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "PGPLIP", "title": "Flowing Out of the Station", "to": "BKNR2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "ASER2IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR3PG", "to": "RERSHIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR2PG", "to": "TPSBIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "ASEPHIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "CHIT7PG", "title": "Flowing Out of the Station", "to": "NEMCHPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "CHIT7PG", "title": "Flowing Out of the Station", "to": "NEMCHPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "NRELAPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "SRI4PIP", "to": "SRI4PIP", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "RAWRAIP", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "ESSL1IP", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RAWRAIP", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "ESSL1IP", "title": "Flowing Into the Station", "to": "BHDLAPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "ASEPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "AEGPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "TS1PLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "TPGELIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "TS1PLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR7PG", "title": "Flowing Out of the Station", "to": "TPGELIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "ADNHBIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BUS3A", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "RSBPLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BUS3B", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "ASEJ2IP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BUS4B", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "AREHSIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "SRNTCAIP", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "NRELAPG", "title": "Flowing Into the Station", "to": "KHTRIPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "FTGR2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "ALIGRPG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "ALIGRPG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "NMRNAPG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "NMRNAPG", "to": "SIKR2PG", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "BHDL2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "AGE25IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "AGE24IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR2PG", "to": "AGE24IP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BKNR2PG", "title": "Flowing Out of the Station", "to": "SOSJVNSJ", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "AZUREPG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "ADANIPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "JGCPLIP", "to": "JGCPLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "SIKR2PG", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "FTGR2PG", "title": "Flowing Out of the Station", "to": "ACMEPG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTHGRIP", "to": "ASHPLIP", "width": 2}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "BUS2A", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "ABCRLIP", "width": 2.5}, {"arrows": "to", "color": "#f54c85", "from": "BHDL2PG", "title": "Flowing Out of the Station", "to": "SIKR2PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "RSDP2IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "GSPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR2IP", "to": "SGELIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BKNR2IP", "to": "KBNHPIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR3IP", "to": "RSJPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "RSJPLIP", "to": "NRVPLI", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "RSDP3IP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "FTGR3IP", "to": "XXPPLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2IP", "to": "ERAPLIP", "width": 2}, {"arrows": "to", "color": "#05e705", "from": "BUS1A", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RSVPLIP", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "BUS2B", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#05e705", "from": "RERSHIP", "title": "Flowing Into the Station", "to": "FTGR3PG", "width": 2.5}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "ESLN1PG", "to": "ESELMIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "ESLN2PG", "to": "ESELMIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "ESELNIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDLAPG", "to": "ESELNIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "BHDL2PG", "to": "RSDCLIP", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "JAIPRPG", "to": "DAUSAPG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "JAIPRPG", "to": "DAUSAPG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "AGRAPG", "to": "DAUSAPG", "width": 2}, {"arrows": "to", "color": "#FFFFFF", "dashes": true, "from": "AGRAPG", "to": "DAUSAPG", "width": 2}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -200,
+            "springConstant": 0.1,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

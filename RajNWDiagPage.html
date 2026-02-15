@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Graph Display</title>
+    <style>
+        body {
+            font-family: Calibri, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #a3a3a3;
+			text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .description {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .graph-container {
+            background-color: #a3a3a3;
+        }
+        iframe {
+            width: 970px;
+            height: 610px; /* Adjust height as needed */
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Network Visualization</h1>
+    <p class="description">Click the link for fullscreen; <a href= "http://localhost:8010/Raj_net.html" target="_blank">(Fullscreen)</a>. Use mouse wheel to zoom in and out. Hover cursor over node, or zoom in, to check the node name. <a href="http://localhost:8010/RajNWDiagPage.html" target="_blank">Open in a new tab</a>.</p>
+    
+    <div class="graph-container">
+        <iframe src="Raj_net.html" title="Network Diagram"></iframe>
+    </div>
+	<div class="legend">
+	    <h2>Legend</h2>
+		<ul style="list-style-type: none; padding: 0; margin: 0;">
+    <li>
+        <span class="color-box" style="background-color: #007f96ff; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px;"></span>
+        To Buses (Stations)
+    </li>
+    <li>
+        <span class="color-box" style="background-color: #ff3737; display: inline-block; width: 20px; height: 20px; margin-right: 5px;"></span>
+        From Buses (Feeders)
+    </li>
+    <li>
+        <span class="color-box" style="background-color: #FFFFFF; display: inline-block; width: 40px; height: 5px; margin-right: 5px;"></span>
+        Network lines.
+    </li>
+    <li>
+        <span class="color-box" style="background-color: #05e705; display: inline-block; width: 40px; height: 5px; margin-right: 5px;"></span>
+        Forward Flow (Station to Feeder)
+    </li>
+    <li>
+        <span class="color-box" style="background-color: #f54c85; display: inline-block; width: 40px; height: 5px; margin-right: 5px;"></span>
+        Reverse Flow (Feeder to Station)
+    </li>
+</ul>
+
+	</div>
+
+    <footer>
+        <p>&copy; IIT KGP 2026</p>
+    </footer>
+</body>
+</html>
